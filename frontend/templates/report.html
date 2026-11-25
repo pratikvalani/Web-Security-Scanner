@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Report - {{ report.domain }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container nav-flex">
+            <div>
+                <h1>Security Assessment Report</h1>
+                <p>Target: <strong>{{ report.target_url }}</strong> ({{ report.ip_address }})</p>
+            </div>
+            <div class="nav-actions">
+                <a href="{{ url_for('export_report_json', scan_id=scan.id) }}" class="btn-export">Download JSON</a>
+                <a href="{{ url_for('export_report_csv', scan_id=scan.id) }}" class="btn-export">Download CSV</a>
+                <a href="{{ url_for('index') }}" class="btn-secondary">Back to Scanner</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="summary-grid">
+            <div class="card stat-card">
+                <h3>Overall Risk Score</h3>
+                <div class="score-value">{{ report.risk_score }}<span>/100</span></div>
+                <span class="badge badge-{{ report.risk_level|lower }}">{{ report.risk_level }} Risk</span>
+            </div>
+            <div class="card stat-card">
+                <h3>SSL/TLS Status</h3>
+                <p class="stat-main">{{ "Valid" if report.ssl.valid else "Invalid / Missing" }}</p>
+                <p class="stat-sub">Protocol: {{ report.ssl.protocol }} | Expires: {{ report.ssl.expiry_date }}</p>
+            </div>
+            <div class="card stat-card">
+                <h3>Server Fingerprint</h3>
+                <p class="stat-main">{{ report.server_banner }}</p>
+                <p class="stat-sub">HTTP Status: {{ report.status_code or "N/A" }} | Open Ports: {{ report.ports|length }}</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>1. SSL/TLS Certificate Validation</h2>
+            <div class="ssl-box">
+                <p><strong>Status:</strong> <span class="badge badge-{{ report.ssl.severity|lower }}">{{ report.ssl.severity }}</span> — {{ report.ssl.message }}</p>
+                <p><strong>Certificate Issuer:</strong> {{ report.ssl.issuer }}</p>
+                <p><strong>Expiration Date:</strong> {{ report.ssl.expiry_date }} ({{ report.ssl.days_remaining }} days remaining)</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>2. HTTP Security Header Analysis</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Finding</th>
+                            <th>Severity</th>
+                            <th>Remediation / Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in report.headers %}
+                        <tr>
+                            <td>{{ item.category }}</td>
+                            <td><strong>{{ item.issue }}</strong></td>
+                            <td><span class="badge badge-{{ item.severity|lower }}">{{ item.severity }}</span></td>
+                            <td>{{ item.remediation }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3. Network Port & Service Exposure</h2>
+            {% if report.ports %}
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>Service</th>
+                            <th>Risk Severity</th>
+                            <th>Security Observation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in report.ports %}
+                        <tr>
+                            <td><strong>{{ p.port }}/TCP</strong></td>
+                            <td>{{ p.service }}</td>
+                            <td><span class="badge badge-{{ p.severity|lower }}">{{ p.severity }}</span></td>
+                            <td>{{ p.note }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">No common exposed ports detected during scan.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

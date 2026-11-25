@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Vulnerability Assessment & Security Scanner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <h1>WebSec Assess</h1>
+            <p>Automated Web Vulnerability Assessment & Security Misconfiguration Scanner</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card scan-box">
+            <h2>Start Security Assessment</h2>
+            <p class="subtitle">Analyze HTTP security headers, SSL/TLS certificates, and exposed network ports.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('index') }}" class="scan-form" onsubmit="showLoader()">
+                <input type="text" name="target_url" placeholder="Enter domain or URL (e.g., example.com)" required>
+                <button type="submit" id="scanBtn">Run Assessment</button>
+            </form>
+            <p id="loaderText" class="loader-text" style="display: none;">Scanning target headers, SSL certificate, and ports...</p>
+            <p class="disclaimer">Ethical Use Only: Only scan domains and web applications you own or have explicit authorization to test.</p>
+        </section>
+
+        <section class="card">
+            <h2>Recent Assessment History</h2>
+            {% if scans %}
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Target URL</th>
+                            <th>Date & Time</th>
+                            <th>Risk Score</th>
+                            <th>Risk Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in scans %}
+                        <tr>
+                            <td>#{{ scan.id }}</td>
+                            <td><strong>{{ scan.domain }}</strong></td>
+                            <td>{{ scan.scan_date }}</td>
+                            <td>{{ scan.risk_score }} / 100</td>
+                            <td><span class="badge badge-{{ scan.risk_level|lower }}">{{ scan.risk_level }}</span></td>
+                            <td class="action-cell">
+                                <a href="{{ url_for('view_report', scan_id=scan.id) }}" class="btn-link">View Report</a>
+                                <form method="POST" action="{{ url_for('delete_scan', scan_id=scan.id) }}" class="inline-form">
+                                    <button type="submit" class="btn-delete">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty-state">No assessments recorded yet. Enter a URL above to generate your first security report.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script>
+        function resetScanUI() {
+            const btn = document.getElementById("scanBtn");
+            const loader = document.getElementById("loaderText");
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "Run Assessment";
+            }
+            if (loader) {
+                loader.style.display = "none";
+            }
+        }
+
+        function showLoader() {
+            document.getElementById("scanBtn").disabled = true;
+            document.getElementById("scanBtn").innerText = "Scanning...";
+            document.getElementById("loaderText").style.display = "block";
+        }
+
+        window.addEventListener("pageshow", resetScanUI);
+    </script>
+</body>
+</html>
